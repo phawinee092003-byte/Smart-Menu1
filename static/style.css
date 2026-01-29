@@ -1,0 +1,54 @@
+:root {
+    --primary: #ff4757;
+    --dark: #2f3542;
+    --gray: #747d8c;
+    --white: #ffffff;
+    --bg: #f8f9fa;
+}
+
+body { font-family: 'Prompt', sans-serif; margin: 0; background: var(--bg); }
+
+/* Navbar */
+.navbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 15px 7%; background: var(--white); box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    position: sticky; top: 0; z-index: 1000;
+}
+.logo { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+.logo span { color: var(--dark); }
+
+/* Dropdown ภาษา */
+.dropbtn { background: var(--dark); color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-family: 'Prompt'; }
+.dropdown-content { display: none; position: absolute; right: 0; background: white; min-width: 120px; box-shadow: 0 8px 16px rgba(0,0,0,0.1); border-radius: 10px; }
+.dropdown-content a { color: black; padding: 12px; text-decoration: none; display: block; }
+.show { display: block; }
+
+/* Category Scroll */
+.category-container { background: white; border-bottom: 1px solid #eee; }
+.category-scroll {
+    display: flex; gap: 12px; padding: 15px 7%; overflow-x: auto; white-space: nowrap;
+}
+.category-scroll::-webkit-scrollbar { display: none; } /* ซ่อน Scrollbar */
+
+.cat-btn {
+    padding: 10px 22px; border-radius: 30px; border: 1px solid #ddd;
+    background: white; cursor: pointer; font-family: 'Prompt'; transition: 0.3s;
+}
+.cat-btn.active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 4px 10px rgba(255, 71, 87, 0.3); }
+
+/* Grid & Cards */
+.menu-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 30px; padding: 30px 7%;
+}
+.menu-card {
+    background: white; border-radius: 20px; overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.05); transition: 0.3s;
+}
+.menu-card:hover { transform: translateY(-8px); box-shadow: 0 15px 35px rgba(0,0,0,0.1); }
+
+.menu-img { width: 100%; height: 220px; object-fit: cover; }
+.menu-info { padding: 20px; }
+.menu-info h3 { margin: 0 0 10px; font-size: 1.3rem; }
+.menu-info p { color: var(--gray); font-size: 0.95rem; line-height: 1.5; margin-bottom: 15px; }
+.allergy { font-size: 0.8rem; color: #e84118; background: #fff5f5; padding: 5px 12px; border-radius: 8px; font-weight: 500; }

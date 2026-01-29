@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Menu - Digital Menu</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/3.3.0/model-viewer.min.js"></script>
+
+    <style>
+        .search-container { padding: 15px 7%; background: #fff; display: flex; justify-content: center; }
+        .search-box { width: 100%; max-width: 500px; padding: 12px 20px; border: 2px solid #eee; border-radius: 30px; font-family: 'Prompt', sans-serif; outline: none; transition: 0.3s; }
+        .search-box:focus { border-color: #ff4757; box-shadow: 0 0 10px rgba(255, 71, 87, 0.1); }
+        .price-tag { color: #ff4757; font-weight: 600; font-size: 1.3rem; }
+        
+        .ar-btn {
+            width: 100%; padding: 10px; background: #2d3436; color: #fff; border: none;
+            border-radius: 8px; margin-top: 10px; cursor: pointer; font-family: 'Prompt';
+            display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s;
+        }
+        .ar-btn:hover { background: #000; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">Smart<span>Menu</span></div>
+        <div class="dropdown">
+            <button class="dropbtn" onclick="toggleDropdown()">
+                🌐 <span id="current-lang-label">ไทย</span>
+            </button>
+            <div id="langDropdown" class="dropdown-content">
+                <a href="#" onclick="changeLanguage('th', 'ไทย')">ไทย</a>
+                <a href="#" onclick="changeLanguage('en', 'English')">English</a>
+                <a href="#" onclick="changeLanguage('jp', '日本語')">日本語</a>
+                <a href="#" onclick="changeLanguage('cn', '中文')">中文</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="search-container">
+        <input type="text" id="menuSearch" class="search-box" placeholder="ค้นหาเมนูอาหาร..." onkeyup="searchMenu()">
+    </div>
+
+    <div class="category-container">
+        <div class="category-scroll">
+            <button class="cat-btn active" onclick="filterMenu('thai', this)" data-key="cat_thai">อาหารไทย</button>
+            <button class="cat-btn" onclick="filterMenu('western', this)" data-key="cat_western">อาหารฝรั่ง</button>
+            <button class="cat-btn" onclick="filterMenu('indian', this)" data-key="cat_indian">อาหารอินเดีย</button>
+            <button class="cat-btn" onclick="filterMenu('dessert', this)" data-key="cat_dessert">ของหวาน</button>
+            <button class="cat-btn" onclick="filterMenu('drink', this)" data-key="cat_drink">เครื่องดื่ม</button>
+        </div>
+    </div>
+
+    <main id="menu-grid" class="menu-grid"></main>
+
+    <div id="arModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:10000; padding: 20px;">
+        <button onclick="closeAR()" style="position:absolute; top:20px; right:20px; color:white; background:none; border:1px solid white; padding:10px; cursor:pointer; border-radius: 5px;">ปิด (Close)</button>
+        <model-viewer id="foodViewer" src="" ar ar-modes="webxr scene-viewer quick-look" camera-controls poster="loading..." shadow-intensity="1" style="width:100%; height:90%;"></model-viewer>
+    </div>
+
+    <script>
+        const translations = {
+            th: { view_ar: "ดูภาพ 3D / วางบนโต๊ะ", allergy: "ข้อมูลการแพ้", ingredients_label: "ส่วนประกอบ", spicy_label: "ระดับความเผ็ด", search_placeholder: "ค้นหาเมนูอาหาร...", cat_thai: "อาหารไทย", cat_western: "อาหารฝรั่ง", cat_indian: "อาหารอินเดีย", cat_dessert: "ของหวาน", cat_drink: "เครื่องดื่ม" },
+            en: { view_ar: "View 3D / AR", allergy: "Allergy Info", ingredients_label: "Ingredients", spicy_label: "Spiciness", search_placeholder: "Search menu...", cat_thai: "Thai", cat_western: "Western", cat_indian: "Indian", cat_dessert: "Dessert", cat_drink: "Drinks" },
+            jp: { view_ar: "3D/ARで見る", allergy: "アレルギー情報", ingredients_label: "材料", spicy_label: "辛さ", search_placeholder: "メニューを検索...", cat_thai: "タイ料理", cat_western: "洋食", cat_indian: "インド料理", cat_dessert: "デザート", cat_drink: "飲み物" },
+            cn: { view_ar: "查看 3D/AR", allergy: "过敏原信息", ingredients_label: "配料", spicy_label: "辣度", search_placeholder: "搜索菜单...", cat_thai: "泰国菜", cat_western: "西餐", cat_indian: "印度菜", cat_dessert: "甜点", cat_drink: "饮料" }
+        };
+
+        const foodData = {
+            thai: [
+                { 
+                    name: {th: "ต้มยำกุ้ง", en: "Tom Yum Goong", jp: "トムヤムクン", cn: "冬阴功"}, 
+                    desc: {th: "ซุปสมุนไพรไทยรสจัดจ้าน", en: "Spicy and sour Thai soup.", jp: "スパイシーなスープ", cn: "酸辣汤"}, 
+                    ingredients: {th: "กุ้งแม่น้ำ, สมุนไพรไทย", en: "River prawn, Thai herbs", jp: "エビ、ハーブ", cn: "虾、香草"}, 
+                    spicy: 4, price: 280, allergy: {th: "กุ้ง, ปลา", en: "Shrimp, Fish", jp: "海老、魚", cn: "虾、鱼"},
+                    image: "https://www.mfoodservice.com/images/admin/img/42.png",
+                    model3d: "/static/models/tomyum.glb" 
+                }
+            ],
+            western: [], indian: [], dessert: [], drink: []
+        };
+
+        let currentLang = 'th';
+        let currentCat = 'thai';
+
+        function toggleDropdown() { document.getElementById("langDropdown").classList.toggle("show"); }
+
+        function searchMenu() {
+            const searchText = document.getElementById('menuSearch').value.toLowerCase();
+            renderCards(searchText);
+        }
+
+        function changeLanguage(lang, label) {
+            currentLang = lang;
+            document.getElementById('current-lang-label').innerText = label;
+            document.getElementById('menuSearch').placeholder = translations[lang].search_placeholder;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                const key = btn.getAttribute('data-key');
+                if(translations[lang][key]) btn.innerText = translations[lang][key];
+            });
+            renderCards();
+        }
+
+        function filterMenu(cat, btn) {
+            currentCat = cat;
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            renderCards();
+        }
+
+        function openAR(modelUrl) {
+            const viewer = document.getElementById('foodViewer');
+            document.getElementById('arModal').style.display = 'block';
+            viewer.src = modelUrl;
+        }
+
+        function closeAR() {
+            document.getElementById('arModal').style.display = 'none';
+            document.getElementById('foodViewer').src = '';
+        }
+
+        function renderCards(filterText = "") {
+            const grid = document.getElementById('menu-grid');
+            grid.innerHTML = '';
+            const items = foodData[currentCat] || [];
+            const currency = { th: "฿", en: "$", jp: "¥", cn: "¥" };
+
+            items.filter(item => item.name[currentLang].toLowerCase().includes(filterText.toLowerCase())).forEach(item => {
+                let displayPrice = item.price;
+                if (currentLang === 'en') displayPrice = (item.price / 35).toFixed(2);
+                let arButton = item.model3d ? `<button class="ar-btn" onclick="openAR('${item.model3d}')">🕶️ ${translations[currentLang].view_ar}</button>` : '';
+
+                grid.innerHTML += `
+                    <div class="menu-card">
+                        <img src="${item.image}" class="menu-img">
+                        <div class="menu-info">
+                            <div style="display: flex; justify-content: space-between;">
+                                <h3>${item.name[currentLang]}</h3>
+                                <span class="price-tag">${currency[currentLang]}${displayPrice}</span>
+                            </div>
+                            <p>${item.desc[currentLang]}</p>
+                            ${arButton}
+                            <span class="allergy">⚠️ ${translations[currentLang].allergy}: ${item.allergy[currentLang]}</span>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('arModal')) closeAR();
+        }
+
+        renderCards();
+    </script>
+</body>
+</html>
