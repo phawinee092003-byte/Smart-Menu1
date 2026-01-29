@@ -21,12 +21,12 @@
             display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s;
         }
 
-        /* แก้ไขปุ่มปิดให้ลอยเด่นและกดได้ 100% */
+        /* ปุ่มปิด AR - ลอยเด่นเหนือทุกเลเยอร์ */
         .btn-close-ar {
             position: fixed !important;
             top: 30px !important;
             right: 20px !important;
-            z-index: 999999 !important; /* ค่าสูงสุดเพื่อให้อยู่เหนือ model-viewer */
+            z-index: 999999 !important;
             background: #ff4757 !important;
             color: white !important;
             border: none !important;
@@ -36,7 +36,6 @@
             font-family: 'Prompt', sans-serif !important;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5) !important;
             cursor: pointer !important;
-            display: block !important;
         }
     </style>
 </head>
@@ -74,7 +73,6 @@
     <main id="menu-grid" class="menu-grid"></main>
 
     <div id="arModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:100000;">
-        
         <button class="btn-close-ar" onclick="closeAR()">ปิด (Close)</button>
         
         <model-viewer 
@@ -85,7 +83,8 @@
             camera-controls 
             shadow-intensity="1" 
             environment-image="neutral" 
-            exposure="1.5" 
+            exposure="1.8"
+            tone-mapping="commerce"
             style="width:100%; height:100%;">
         </model-viewer>
     </div>
@@ -140,14 +139,12 @@
             const viewer = document.getElementById('foodViewer');
             document.getElementById('arModal').style.display = 'block';
             viewer.src = modelUrl;
-            // บังคับหยุดเลื่อนหน้าจอหลักเมื่อเปิด Modal
             document.body.style.overflow = 'hidden';
         }
 
         function closeAR() {
             document.getElementById('arModal').style.display = 'none';
             document.getElementById('foodViewer').src = '';
-            // กลับมาเลื่อนหน้าจอหลักได้ตามปกติ
             document.body.style.overflow = 'auto';
         }
 
