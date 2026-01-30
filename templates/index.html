@@ -21,7 +21,6 @@
             display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.3s;
         }
 
-        /* ปุ่มปิด AR - ลอยเด่นเหนือทุกเลเยอร์ */
         .btn-close-ar {
             position: fixed !important;
             top: 30px !important;
@@ -36,6 +35,12 @@
             font-family: 'Prompt', sans-serif !important;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5) !important;
             cursor: pointer !important;
+        }
+
+        model-viewer {
+            width: 100%;
+            height: 100%;
+            background-color: #000;
         }
     </style>
 </head>
@@ -62,11 +67,11 @@
 
     <div class="category-container">
         <div class="category-scroll">
-            <button class="cat-btn active" onclick="filterMenu('thai', this)" data-key="cat_thai">อาหารไทย</button>
-            <button class="cat-btn" onclick="filterMenu('western', this)" data-key="cat_western">อาหารฝรั่ง</button>
-            <button class="cat-btn" onclick="filterMenu('indian', this)" data-key="cat_indian">อาหารอินเดีย</button>
-            <button class="cat-btn" onclick="filterMenu('dessert', this)" data-key="cat_dessert">ของหวาน</button>
-            <button class="cat-btn" onclick="filterMenu('drink', this)" data-key="cat_drink">เครื่องดื่ม</button>
+            <button class="cat-btn active" onclick="filterMenu('thai', this)">อาหารไทย</button>
+            <button class="cat-btn" onclick="filterMenu('western', this)">อาหารฝรั่ง</button>
+            <button class="cat-btn" onclick="filterMenu('indian', this)">อาหารอินเดีย</button>
+            <button class="cat-btn" onclick="filterMenu('dessert', this)">ของหวาน</button>
+            <button class="cat-btn" onclick="filterMenu('drink', this)">เครื่องดื่ม</button>
         </div>
     </div>
 
@@ -78,23 +83,23 @@
         <model-viewer 
             id="foodViewer" 
             src="" 
+            ios-src="" 
+            draco-decoder-path="https://www.gstatic.com/draco/v1/decoders/"
             ar 
             ar-modes="webxr scene-viewer quick-look" 
             camera-controls 
             shadow-intensity="1" 
-            environment-image="neutral" 
-            exposure="1.8"
-            tone-mapping="commerce"
-            style="width:100%; height:100%;">
+            exposure="1.2"
+            scale="0.3 0.3 0.3">
         </model-viewer>
     </div>
 
     <script>
         const translations = {
-            th: { view_ar: "ดูภาพ 3D / วางบนโต๊ะ", allergy: "ข้อมูลการแพ้", ingredients_label: "ส่วนประกอบ", spicy_label: "ระดับความเผ็ด", search_placeholder: "ค้นหาเมนูอาหาร..." },
-            en: { view_ar: "View 3D / AR", allergy: "Allergy Info", ingredients_label: "Ingredients", spicy_label: "Spiciness", search_placeholder: "Search menu..." },
-            jp: { view_ar: "3D/ARで見る", allergy: "アレルギー情報", ingredients_label: "材料", spicy_label: "辛さ", search_placeholder: "メニューを検索..." },
-            cn: { view_ar: "查看 3D/AR", allergy: "过敏原信息", ingredients_label: "配料", spicy_label: "辣度", search_placeholder: "搜索菜单..." }
+            th: { view_ar: "ดูภาพ 3D / วางบนโต๊ะ", allergy: "ข้อมูลการแพ้", search_placeholder: "ค้นหาเมนูอาหาร..." },
+            en: { view_ar: "View 3D / AR", allergy: "Allergy Info", search_placeholder: "Search menu..." },
+            jp: { view_ar: "3D/ARで見る", allergy: "アレルギー情報", search_placeholder: "メニューを検索..." },
+            cn: { view_ar: "查看 3D/AR", allergy: "过敏原信息", search_placeholder: "搜索菜单..." }
         };
 
         const foodData = {
@@ -102,10 +107,12 @@
                 { 
                     name: {th: "ต้มยำกุ้ง", en: "Tom Yum Goong", jp: "トムヤムクン", cn: "冬阴功"}, 
                     desc: {th: "ซุปสมุนไพรไทยรสจัดจ้าน", en: "Spicy and sour Thai soup.", jp: "スパイシーなスープ", cn: "酸辣汤"}, 
-                    ingredients: {th: "กุ้งแม่น้ำ, สมุนไพรไทย", en: "River prawn, Thai herbs", jp: "エビ、ハーブ", cn: "虾、香草"}, 
-                    spicy: 4, price: 280, allergy: {th: "กุ้ง, ปลา", en: "Shrimp, Fish", jp: "海老、魚", cn: "虾、鱼"},
+                    price: 280, 
+                    allergy: {th: "กุ้ง, ปลา", en: "Shrimp, Fish", jp: "海老、魚", cn: "虾、鱼"},
                     image: "https://www.mfoodservice.com/images/admin/img/42.png",
-                    model3d: "/static/models/tomyum.glb" 
+                    // อัปเดตชื่อไฟล์ตามที่คุณมีจริง
+                    model_glb: "/static/models/tomyumarcore.glb", 
+                    model_ios: "/static/models/tomyumarkit (1).glb"
                 }
             ],
             western: [], indian: [], dessert: [], drink: []
@@ -114,12 +121,25 @@
         let currentLang = 'th';
         let currentCat = 'thai';
 
-        function toggleDropdown() { document.getElementById("langDropdown").classList.toggle("show"); }
-
-        function searchMenu() {
-            const searchText = document.getElementById('menuSearch').value.toLowerCase();
-            renderCards(searchText);
+        // ฟังก์ชันบังคับวัสดุให้ทึบแสงและสมจริง
+        function applyMaterialFix(viewerElement) {
+            const model = viewerElement.model;
+            if (model) {
+                model.materials.forEach(material => {
+                    material.setAlphaMode("OPAQUE");
+                    material.setDoubleSided(true);
+                    if (material.pbrMetallicRoughness) {
+                        material.pbrMetallicRoughness.setRoughnessFactor(0.6); // ลดความเงาเพื่อให้ดูน่ากิน
+                        material.pbrMetallicRoughness.setMetalnessFactor(0.1); // ลดการสะท้อนโลหะ
+                    }
+                });
+            }
         }
+
+        const viewer = document.getElementById('foodViewer');
+        viewer.addEventListener('load', () => applyMaterialFix(viewer));
+
+        function toggleDropdown() { document.getElementById("langDropdown").classList.toggle("show"); }
 
         function changeLanguage(lang, label) {
             currentLang = lang;
@@ -135,16 +155,24 @@
             renderCards();
         }
 
-        function openAR(modelUrl) {
+        function searchMenu() {
+            const searchText = document.getElementById('menuSearch').value.toLowerCase();
+            renderCards(searchText);
+        }
+
+        function openAR(glbUrl, iosUrl) {
             const viewer = document.getElementById('foodViewer');
             document.getElementById('arModal').style.display = 'block';
-            viewer.src = modelUrl;
+            viewer.src = glbUrl; // สำหรับ Android
+            viewer.iosSrc = iosUrl; // สำหรับ iOS
             document.body.style.overflow = 'hidden';
+            setTimeout(() => applyMaterialFix(viewer), 500);
         }
 
         function closeAR() {
             document.getElementById('arModal').style.display = 'none';
             document.getElementById('foodViewer').src = '';
+            document.getElementById('foodViewer').iosSrc = ''; 
             document.body.style.overflow = 'auto';
         }
 
@@ -157,8 +185,7 @@
             items.filter(item => item.name[currentLang].toLowerCase().includes(filterText.toLowerCase())).forEach(item => {
                 let displayPrice = item.price;
                 if (currentLang === 'en') displayPrice = (item.price / 35).toFixed(2);
-                let arButton = item.model3d ? `<button class="ar-btn" onclick="openAR('${item.model3d}')">🕶️ ${translations[currentLang].view_ar}</button>` : '';
-
+                
                 grid.innerHTML += `
                     <div class="menu-card">
                         <img src="${item.image}" class="menu-img">
@@ -168,7 +195,7 @@
                                 <span class="price-tag">${currency[currentLang]}${displayPrice}</span>
                             </div>
                             <p>${item.desc[currentLang]}</p>
-                            ${arButton}
+                            <button class="ar-btn" onclick="openAR('${item.model_glb}', '${item.model_ios}')">🕶️ ${translations[currentLang].view_ar}</button>
                             <div style="margin-top:5px; font-size:0.8rem; color:#666;">
                                 ⚠️ ${translations[currentLang].allergy}: ${item.allergy[currentLang]}
                             </div>
@@ -176,6 +203,16 @@
                     </div>`;
             });
         }
+
+        window.onclick = function(event) {
+            if (!event.target.matches('.dropbtn')) {
+                const dropdowns = document.getElementsByClassName("dropdown-content");
+                for (let i = 0; i < dropdowns.length; i++) {
+                    if (dropdowns[i].classList.contains('show')) dropdowns[i].classList.remove('show');
+                }
+            }
+        }
+
         renderCards();
     </script>
 </body>
